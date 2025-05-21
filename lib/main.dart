@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mooh/UI/home_screen.dart';
 import 'UI/login_screen.dart';
 
 void main() {
@@ -12,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SignInScreen(),
+      home: LibraryScreen(),
     );
   }
 }
