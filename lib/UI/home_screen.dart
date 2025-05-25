@@ -15,21 +15,25 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   List<XFile> _images = [];
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedImages();
+    _loadUserAndImages();
   }
 
-  Future<void> _loadSavedImages() async {
+  Future<void> _loadUserAndImages() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> paths = prefs.getStringList('saved_images') ?? [];
+    _userId = prefs.getString('logged_user_id');
+
+    if (_userId == null) return;
+
+    List<String> paths = prefs.getStringList('saved_images_$_userId') ?? [];
 
     List<XFile> existingFiles = [];
     for (var path in paths) {
       if (kIsWeb) {
-        // للويب، المسار هو URL مباشر
         existingFiles.add(XFile(path));
       } else {
         if (await File(path).exists()) {
@@ -42,14 +46,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
       _images = existingFiles;
     });
 
-    // حدّث SharedPreferences لتشمل الصور الموجودة فقط
-    await prefs.setStringList('saved_images', existingFiles.map((e) => e.path).toList());
+    await prefs.setStringList('saved_images_$_userId', existingFiles.map((e) => e.path).toList());
   }
 
   Future<void> _saveImagesToPrefs() async {
+    if (_userId == null) return;
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> paths = _images.map((img) => img.path).toList();
-    await prefs.setStringList('saved_images', paths);
+    await prefs.setStringList('saved_images_$_userId', paths);
   }
 
   Future<void> _pickImages() async {
@@ -57,7 +62,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final List<XFile>? pickedFiles = await picker.pickMultiImage();
 
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
-      // تأكد أن الصور الجديدة ليست مكررة
       List<XFile> newFiles = [];
       for (var file in pickedFiles) {
         bool exists = _images.any((img) => img.path == file.path);
@@ -78,7 +82,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Future<void> _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await prefs.remove('logged_user_id'); // فقط حذف المستخدم الحالي
 
     if (context.mounted) {
       Navigator.pushReplacement(

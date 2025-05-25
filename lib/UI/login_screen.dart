@@ -51,15 +51,12 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   void _onLoginPressed() async {
-    // التحقق أو ربط API هنا إن وجد
 
     await _saveCredentials();
 
-    // حفظ حالة الدخول
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('logged_user_id', emailController.text.trim());
 
-    // الانتقال للصفحة الرئيسية
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
