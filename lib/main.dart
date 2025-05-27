@@ -1,10 +1,24 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart'; // ضروري للـ kIsWeb
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'UI/login_screen.dart';
 import 'UI/home_screen.dart';
+import 'firebase_options.dart'; // لازم تكون عملته بـ flutterfire configure
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (kIsWeb) {
+    // للويب لازم تمرر FirebaseOptions
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else {
+    // للأندرويد و iOS
+    await Firebase.initializeApp();
+  }
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;

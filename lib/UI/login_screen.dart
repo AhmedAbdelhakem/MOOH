@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../Component/button.dart';
 import '../Component/input_field.dart';
 import '../Models/validator.dart';
@@ -50,19 +51,46 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
-  void _onLoginPressed() async {
+  Future<void> _onLoginPressed() async {
+    try {
+      final email = emailController.text.trim();
+      final password = passwordController.text;
 
-    await _saveCredentials();
+      // تسجيل الدخول باستخدام Firebase
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('logged_user_id', emailController.text.trim());
+      // حفظ UID في SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('logged_user_id', userCredential.user!.uid);
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LibraryScreen(),
-      ),
-    );
+      // حفظ البيانات لو Remember Me مفعّل
+      await _saveCredentials();
+
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LibraryScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Login failed';
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Wrong password provided.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'The email address is badly formatted.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Something went wrong. Please try again.')),
+      );
+    }
   }
 
   @override
