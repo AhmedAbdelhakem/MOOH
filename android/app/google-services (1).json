@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "888078756617",
+    "firebase_url": "https://mooh-20804-default-rtdb.firebaseio.com",
+    "project_id": "mooh-20804",
+    "storage_bucket": "mooh-20804.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:888078756617:android:df5ed86b423bc497e781d8",
+        "android_client_info": {
+          "package_name": "com.example.mooh"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "888078756617-3a894fqal6br3dp71uh6asrha73okqgl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mooh",
+            "certificate_hash": "5e24549515a65c2ff9866d74a40eae33228d99a1"
+          }
+        },
+        {
+          "client_id": "888078756617-t0f3n94mkri6u1ao7ic6km1nalhpl9k4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiOKGbJ2PNDIfDyXEQFcKzMsTFhDzM3oE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "888078756617-t0f3n94mkri6u1ao7ic6km1nalhpl9k4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "888078756617-agfl9ha7272r31uclstah345cjv6doh2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mooh"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
