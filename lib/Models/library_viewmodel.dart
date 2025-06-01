@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/image_model.dart';
-import '../Logic/google_drive_services.dart';
+import '../Services/google_drive_services.dart';
 import '../models/image_repository.dart';
 
 enum DriveConnectionStatus { connecting, connected, failed }

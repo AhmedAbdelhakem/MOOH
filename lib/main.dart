@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'UI/login_screen.dart';
 import 'UI/Library_screen.dart';
-import 'Logic/firebase_options.dart'; // لازم تكون عملته بـ flutterfire configure
+import 'Services/firebase_options.dart'; // لازم تكون عملته بـ flutterfire configure
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
