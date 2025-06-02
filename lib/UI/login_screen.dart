@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';  // استدعاء مكتبة جوجل
+import 'package:google_sign_in/google_sign_in.dart';
 import '../Component/button.dart';
 import '../Component/input_field.dart';
 import '../Models/validator.dart';
@@ -18,6 +18,8 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   bool isChecked = false;
   bool isPasswordVisible = true;
+  bool isLoading = false;
+  bool isGoogleLoading = false;
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -53,9 +55,20 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _onLoginPressed() async {
+    if (isLoading || isGoogleLoading) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       final email = emailController.text.trim();
       final password = passwordController.text;
+
+      // Basic validation
+      if (email.isEmpty || password.isEmpty) {
+        throw Exception('Please fill in all fields');
+      }
 
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
@@ -79,26 +92,48 @@ class _SignInScreenState extends State<SignInScreen> {
         errorMessage = 'Wrong password provided.';
       } else if (e.code == 'invalid-email') {
         errorMessage = 'The email address is badly formatted.';
+      } else if (e.code == 'invalid-credential') {
+        errorMessage = 'Invalid credentials. Please check your email and password.';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Something went wrong. Please try again.')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
-  // دالة تسجيل الدخول باستخدام حساب جوجل
+  // Enhanced Google Sign-In function
   Future<void> _signInWithGoogle() async {
+    if (isLoading || isGoogleLoading) return;
+
+    setState(() {
+      isGoogleLoading = true;
+    });
+
     try {
+      // Sign out from previous Google account to allow account selection
+      await GoogleSignIn().signOut();
+
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
-        // المستخدم ألغى تسجيل الدخول
+        // User cancelled the sign-in
         return;
       }
+
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
@@ -119,13 +154,23 @@ class _SignInScreenState extends State<SignInScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google Sign-In failed: ${e.message}')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google Sign-In failed: ${e.message}')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Google Sign-In failed. Please try again.')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Sign-In failed. Please try again.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isGoogleLoading = false;
+        });
+      }
     }
   }
 
@@ -200,17 +245,93 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                myStyledButton(
-                  texts: 'Login',
-                  onPressed: _onLoginPressed,
+
+                // Regular Login Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isLoading || isGoogleLoading ? null : _onLoginPressed,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFFFF6633),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                        : const Text(
+                      'Login',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
+
                 const SizedBox(height: 20),
                 const Text('OR', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
-                myStyledButton(
-                  texts: 'Sign in with Google',
-                  onPressed: _signInWithGoogle,
-                  // لو عندك طريقة لتغيير شكل الزر حطها هنا عشان يظهر زي زر جوجل
+
+                // Google Sign-In Button with custom styling
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isLoading || isGoogleLoading ? null : _signInWithGoogle,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Color(0xFFFF6633),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: const BorderSide(color: Colors.grey, width: 1),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: isGoogleLoading
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.black,
+                      ),
+                    )
+                        : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Google Logo (you can replace with actual Google logo image)
+                        Container(
+                          height: 20,
+                          width: 20,
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: NetworkImage(
+                                'https://developers.google.com/identity/images/g-logo.png',
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Sign in with Google',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
