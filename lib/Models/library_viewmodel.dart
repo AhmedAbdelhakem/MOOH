@@ -63,7 +63,6 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
 
     final List<ImageModel> newImages = [];
-    int uploadedCount = 0;
 
     for (var file in pickedFiles) {
       // Check for duplicates
@@ -74,17 +73,17 @@ class LibraryViewModel extends ChangeNotifier {
       // Upload to Drive if connected
       if (isDriveConnected) {
         driveFileId = await _driveService.uploadFile(file);
-        if (driveFileId != null) uploadedCount++;
+        if (driveFileId != null) {
+          newImages.add(
+            ImageModel(
+              localPath: file.path,
+              driveFileId: driveFileId,
+              fileName: file.name,
+              uploadedAt: DateTime.now(),
+            ),
+          );
+        }
       }
-
-      newImages.add(
-        ImageModel(
-          localPath: file.path,
-          driveFileId: driveFileId,
-          fileName: file.name,
-          uploadedAt: DateTime.now(),
-        ),
-      );
     }
 
     _isUploading = false;
