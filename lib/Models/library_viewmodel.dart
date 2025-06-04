@@ -1,8 +1,8 @@
-// viewmodels/library_viewmodel.dart
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/image_model.dart';
 import '../Services/google_drive_services.dart';
+import '../models/image_model.dart';
 import '../models/image_repository.dart';
 
 enum DriveConnectionStatus { connecting, connected, failed }
@@ -27,7 +27,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
     await _loadUserAndImages();
-    _initializeDriveConnection();
+    await _initializeDriveConnection();
   }
 
   Future<void> _loadUserAndImages() async {
@@ -38,7 +38,7 @@ class LibraryViewModel extends ChangeNotifier {
     }
   }
 
-  void _initializeDriveConnection() async {
+  Future<void> _initializeDriveConnection() async {
     try {
       _driveStatus = DriveConnectionStatus.connecting;
       _driveError = null;
@@ -50,7 +50,7 @@ class LibraryViewModel extends ChangeNotifier {
       _driveError = null;
     } catch (e) {
       _driveStatus = DriveConnectionStatus.failed;
-      _driveError = e.toString();
+      _driveError = _driveService.getSimplifiedError(e.toString());
     }
     notifyListeners();
   }
@@ -65,23 +65,27 @@ class LibraryViewModel extends ChangeNotifier {
     final List<ImageModel> newImages = [];
 
     for (var file in pickedFiles) {
-      // Check for duplicates
       if (_images.any((img) => img.localPath == file.path)) continue;
 
       String? driveFileId;
 
-      // Upload to Drive if connected
       if (isDriveConnected) {
-        driveFileId = await _driveService.uploadFile(file);
-        if (driveFileId != null) {
-          newImages.add(
-            ImageModel(
-              localPath: file.path,
-              driveFileId: driveFileId,
-              fileName: file.name,
-              uploadedAt: DateTime.now(),
-            ),
-          );
+        try {
+          final fileBytes = await file.readAsBytes();
+          driveFileId = await _driveService.uploadFile(file.name, fileBytes);
+
+          if (driveFileId != null) {
+            newImages.add(
+              ImageModel(
+                localPath: file.path,
+                driveFileId: driveFileId,
+                fileName: file.name,
+                uploadedAt: DateTime.now(),
+              ),
+            );
+          }
+        } catch (e) {
+          print("Upload failed for ${file.name}: $e");
         }
       }
     }
@@ -98,9 +102,12 @@ class LibraryViewModel extends ChangeNotifier {
   Future<void> deleteImage(int index) async {
     final imageData = _images[index];
 
-    // Delete from Drive if synced
     if (imageData.driveFileId != null && isDriveConnected) {
-      await _driveService.deleteFile(imageData.driveFileId!);
+      try {
+        await _driveService.deleteFile(imageData.driveFileId!);
+      } catch (e) {
+        print('Error deleting image from Drive: $e');
+      }
     }
 
     _images.removeAt(index);
@@ -109,11 +116,10 @@ class LibraryViewModel extends ChangeNotifier {
   }
 
   Future<void> retryDriveConnection() async {
-    _initializeDriveConnection();
+    await _initializeDriveConnection();
   }
 
   Future<void> logout() async {
-    await _driveService.signOut();
     await _imageRepository.clearUserId();
   }
 
@@ -139,12 +145,11 @@ class LibraryViewModel extends ChangeNotifier {
 
   String getSimplifiedDriveError() {
     if (_driveError == null) return '';
-    return _driveService.getSimplifiedError(_driveError!);
+    return _driveError!;
   }
 
   @override
   void dispose() {
-    _driveService.signOut();
     super.dispose();
   }
 }

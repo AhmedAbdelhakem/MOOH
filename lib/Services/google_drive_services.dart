@@ -1,222 +1,82 @@
-// services/google_drive_service.dart
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:googleapis/drive/v3.dart' as drive;
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 
 class GoogleDriveService {
-  static const String _clientId =
-      '126041465108-2nua4t9t9r9sl125sj7etdvjul2ovjhp.apps.googleusercontent.com';
-  static const List<String> _scopes = [
-    'https://www.googleapis.com/auth/drive.file',
-    'https://www.googleapis.com/auth/drive.metadata',
-  ];
-  static const String _folderName = 'mooh';
+  static const _scopes = [drive.DriveApi.driveFileScope];
+  static const _folderId = '1CfNb9Qs0NdzYfuSgxvME8PmdLl5CwDTy'; // ID فولدر MOOH
 
-  GoogleSignIn? _googleSignIn;
-  drive.DriveApi? _driveApi;
-  String? _folderId;
+  late AutoRefreshingAuthClient _client;
+  late drive.DriveApi _driveApi;
 
-  bool get isConnected => _driveApi != null;
-  String? get folderId => _folderId;
-
+  /// تهيئة Google Drive API
   Future<void> initialize() async {
-    await _checkInternetConnection();
-    await _signIn();
-    await _initializeDriveApi();
-    await _createOrGetFolder();
-  }
-
-  Future<void> _checkInternetConnection() async {
     try {
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isEmpty || result[0].rawAddress.isEmpty) {
-        throw Exception('No internet connection available');
-      }
-    } on SocketException {
-      throw Exception('No internet connection available');
-    }
-  }
-
-  Future<void> _signIn() async {
-    _googleSignIn = GoogleSignIn(
-      scopes: _scopes,
-      clientId: kIsWeb ? _clientId : null,
-    );
-
-    if (_googleSignIn!.currentUser != null) {
-      await _googleSignIn!.signOut();
-    }
-
-    final account = await _googleSignIn!.signIn();
-    if (account == null) {
-      throw Exception('Google sign-in was cancelled by user');
-    }
-  }
-
-  Future<void> _initializeDriveApi() async {
-    final account = _googleSignIn!.currentUser;
-    if (account == null) throw Exception('No signed-in user');
-
-    final authHeaders = await _getAuthHeaders(account);
-    if (authHeaders == null) {
-      throw Exception('Failed to obtain authentication credentials');
-    }
-
-    _driveApi = drive.DriveApi(_GoogleAuthClient(authHeaders));
-    await _testConnection();
-  }
-
-  Future<Map<String, String>?> _getAuthHeaders(
-    GoogleSignInAccount account,
-  ) async {
-    for (int retry = 0; retry < 3; retry++) {
-      try {
-        final authHeaders = await account.authHeaders;
-        if (authHeaders.containsKey('Authorization') &&
-            authHeaders['Authorization']!.startsWith('Bearer ')) {
-          return authHeaders;
-        }
-        throw Exception('Invalid authorization token');
-      } catch (e) {
-        if (retry < 2) {
-          await Future.delayed(Duration(seconds: (retry + 1) * 2));
-          await account.authentication;
-        }
-      }
-    }
-    return null;
-  }
-
-  Future<void> _testConnection() async {
-    if (_driveApi == null) throw Exception('Drive API not initialized');
-
-    try {
-      await _driveApi!.about
-          .get($fields: 'user')
-          .timeout(const Duration(seconds: 10));
-      await _driveApi!.files
-          .list(pageSize: 1, $fields: 'files(id, name)')
-          .timeout(const Duration(seconds: 10));
+      final credentials = await _loadServiceAccountCredentials();
+      _client = await clientViaServiceAccount(credentials, _scopes);
+      _driveApi = drive.DriveApi(_client);
     } catch (e) {
-      if (e.toString().contains('403')) {
-        throw Exception(
-          'Google Drive API access denied. Check Google Cloud Console configuration.',
-        );
-      }
-      throw Exception('Failed to connect to Google Drive API: $e');
+      print('❌ Failed to initialize Google Drive: $e');
+      rethrow;
     }
   }
 
-  Future<void> _createOrGetFolder() async {
-    if (_driveApi == null) throw Exception('Drive API not initialized');
-
-    final query =
-        "name='$_folderName' and mimeType='application/vnd.google-apps.folder' and trashed=false";
-
-    final fileList = await _driveApi!.files
-        .list(
-          q: query,
-          spaces: 'drive',
-          $fields: 'files(id, name)',
-          pageSize: 1,
-        )
-        .timeout(const Duration(seconds: 15));
-
-    if (fileList.files != null && fileList.files!.isNotEmpty) {
-      _folderId = fileList.files!.first.id;
-    } else {
-      final folder =
-          drive.File()
-            ..name = _folderName
-            ..mimeType = 'application/vnd.google-apps.folder';
-
-      final createdFolder = await _driveApi!.files
-          .create(folder, $fields: 'id, name')
-          .timeout(const Duration(seconds: 15));
-
-      _folderId = createdFolder.id;
-    }
-
-    if (_folderId == null) {
-      throw Exception('Failed to create or retrieve Google Drive folder');
-    }
-  }
-
-  Future<String?> uploadFile(XFile file) async {
-    if (_driveApi == null || _folderId == null) return null;
-
+  /// تحميل بيانات حساب الخدمة من ملف JSON في assets
+  Future<ServiceAccountCredentials> _loadServiceAccountCredentials() async {
     try {
-      final fileBytes =
-          kIsWeb
-              ? await file.readAsBytes()
-              : await File(file.path).readAsBytes();
+      final jsonString = await rootBundle.loadString('assets/mooh-20804-180a157b4d00.json');
+      final jsonMap = json.decode(jsonString);
+      return ServiceAccountCredentials.fromJson(jsonMap);
+    } catch (e) {
+      print('❌ Failed to load service account credentials: $e');
+      rethrow;
+    }
+  }
 
-      final driveFile =
-          drive.File()
-            ..name = file.name
-            ..parents = [_folderId!]
-            ..description = 'Uploaded from MOOH app';
-
+  /// رفع ملف إلى فولدر Drive
+  Future<String?> uploadFile(String fileName, Uint8List fileBytes) async {
+    try {
       final media = drive.Media(Stream.value(fileBytes), fileBytes.length);
-      final result = await _driveApi!.files
-          .create(driveFile, uploadMedia: media, $fields: 'id, name')
-          .timeout(const Duration(seconds: 30));
+      final driveFile = drive.File()
+        ..name = fileName
+        ..parents = [_folderId];
 
+      final result = await _driveApi.files.create(driveFile, uploadMedia: media);
+      print('✅ File uploaded: ${result.name} (${result.id})');
       return result.id;
     } catch (e) {
-      print('Failed to upload ${file.name}: $e');
+      print('❌ Failed to upload file: $e');
       return null;
     }
   }
 
+  /// حذف ملف من Google Drive
   Future<void> deleteFile(String fileId) async {
-    if (_driveApi == null) return;
-
     try {
-      await _driveApi!.files.delete(fileId);
+      await _driveApi.files.delete(fileId);
+      print('🗑️ File deleted: $fileId');
     } catch (e) {
-      print('Error deleting file from Google Drive: $e');
+      print('❌ Failed to delete file: $e');
     }
   }
 
-  Future<void> signOut() async {
-    try {
-      await _googleSignIn?.signOut();
-    } catch (e) {
-      print('Error signing out from Google: $e');
-    }
-    _driveApi = null;
-    _folderId = null;
-  }
-
+  /// تبسيط رسالة الخطأ لعرضها في الواجهة
   String getSimplifiedError(String error) {
-    if (error.contains('403')) return 'API not enabled or permissions missing';
-    if (error.contains('401')) return 'Authentication failed';
-    if (error.contains('400')) return 'Invalid request';
-    if (error.contains('NetworkException') ||
-        error.contains('SocketException')) {
-      return 'Network connection issue';
+    if (error.contains('403')) {
+      return '🚫 Access denied. تأكد إن فولدر Drive متشارك مع Service Account.';
     }
-    if (error.contains('cancelled')) return 'Sign-in was cancelled';
-    if (error.contains('TimeoutException')) return 'Connection timeout';
-    return 'Connection error - please try again';
+    if (error.contains('401')) {
+      return '🔒 Unauthorized. تأكد من ملف الـ JSON ومفتاح الخدمة.';
+    }
+    if (error.contains('SocketException')) {
+      return '🌐 لا يوجد اتصال بالإنترنت.';
+    }
+    if (error.contains('TimeoutException')) {
+      return '⏱️ انتهت المهلة. حاول مرة أخرى.';
+    }
+    return '❗ حدث خطأ غير معروف:\n$error';
   }
-}
-
-class _GoogleAuthClient extends http.BaseClient {
-  final Map<String, String> _headers;
-  final http.Client _client = http.Client();
-
-  _GoogleAuthClient(this._headers);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    return _client.send(request..headers.addAll(_headers));
-  }
-
-  @override
-  void close() => _client.close();
 }
