@@ -1,6 +1,5 @@
 // services/google_drive_service.dart
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -8,10 +7,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
 class GoogleDriveService {
-  static const String _clientId = '126041465108-2nua4t9t9r9sl125sj7etdvjul2ovjhp.apps.googleusercontent.com';
+  static const String _clientId =
+      '126041465108-2nua4t9t9r9sl125sj7etdvjul2ovjhp.apps.googleusercontent.com';
   static const List<String> _scopes = [
     'https://www.googleapis.com/auth/drive.file',
-    'https://www.googleapis.com/auth/drive.metadata'
+    'https://www.googleapis.com/auth/drive.metadata',
   ];
   static const String _folderName = 'mooh';
 
@@ -69,7 +69,9 @@ class GoogleDriveService {
     await _testConnection();
   }
 
-  Future<Map<String, String>?> _getAuthHeaders(GoogleSignInAccount account) async {
+  Future<Map<String, String>?> _getAuthHeaders(
+    GoogleSignInAccount account,
+  ) async {
     for (int retry = 0; retry < 3; retry++) {
       try {
         final authHeaders = await account.authHeaders;
@@ -92,12 +94,17 @@ class GoogleDriveService {
     if (_driveApi == null) throw Exception('Drive API not initialized');
 
     try {
-      await _driveApi!.about.get($fields: 'user').timeout(const Duration(seconds: 10));
-      await _driveApi!.files.list(pageSize: 1, $fields: 'files(id, name)')
+      await _driveApi!.about
+          .get($fields: 'user')
+          .timeout(const Duration(seconds: 10));
+      await _driveApi!.files
+          .list(pageSize: 1, $fields: 'files(id, name)')
           .timeout(const Duration(seconds: 10));
     } catch (e) {
       if (e.toString().contains('403')) {
-        throw Exception('Google Drive API access denied. Check Google Cloud Console configuration.');
+        throw Exception(
+          'Google Drive API access denied. Check Google Cloud Console configuration.',
+        );
       }
       throw Exception('Failed to connect to Google Drive API: $e');
     }
@@ -106,26 +113,29 @@ class GoogleDriveService {
   Future<void> _createOrGetFolder() async {
     if (_driveApi == null) throw Exception('Drive API not initialized');
 
-    final query = "name='$_folderName' and mimeType='application/vnd.google-apps.folder' and trashed=false";
+    final query =
+        "name='$_folderName' and mimeType='application/vnd.google-apps.folder' and trashed=false";
 
-    final fileList = await _driveApi!.files.list(
-      q: query,
-      spaces: 'drive',
-      $fields: 'files(id, name)',
-      pageSize: 1,
-    ).timeout(const Duration(seconds: 15));
+    final fileList = await _driveApi!.files
+        .list(
+          q: query,
+          spaces: 'drive',
+          $fields: 'files(id, name)',
+          pageSize: 1,
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (fileList.files != null && fileList.files!.isNotEmpty) {
       _folderId = fileList.files!.first.id;
     } else {
-      final folder = drive.File()
-        ..name = _folderName
-        ..mimeType = 'application/vnd.google-apps.folder';
+      final folder =
+          drive.File()
+            ..name = _folderName
+            ..mimeType = 'application/vnd.google-apps.folder';
 
-      final createdFolder = await _driveApi!.files.create(
-        folder,
-        $fields: 'id, name',
-      ).timeout(const Duration(seconds: 15));
+      final createdFolder = await _driveApi!.files
+          .create(folder, $fields: 'id, name')
+          .timeout(const Duration(seconds: 15));
 
       _folderId = createdFolder.id;
     }
@@ -139,21 +149,21 @@ class GoogleDriveService {
     if (_driveApi == null || _folderId == null) return null;
 
     try {
-      final fileBytes = kIsWeb
-          ? await file.readAsBytes()
-          : await File(file.path).readAsBytes();
+      final fileBytes =
+          kIsWeb
+              ? await file.readAsBytes()
+              : await File(file.path).readAsBytes();
 
-      final driveFile = drive.File()
-        ..name = file.name
-        ..parents = [_folderId!]
-        ..description = 'Uploaded from MOOH app';
+      final driveFile =
+          drive.File()
+            ..name = file.name
+            ..parents = [_folderId!]
+            ..description = 'Uploaded from MOOH app';
 
       final media = drive.Media(Stream.value(fileBytes), fileBytes.length);
-      final result = await _driveApi!.files.create(
-        driveFile,
-        uploadMedia: media,
-        $fields: 'id, name',
-      ).timeout(const Duration(seconds: 30));
+      final result = await _driveApi!.files
+          .create(driveFile, uploadMedia: media, $fields: 'id, name')
+          .timeout(const Duration(seconds: 30));
 
       return result.id;
     } catch (e) {
@@ -186,7 +196,8 @@ class GoogleDriveService {
     if (error.contains('403')) return 'API not enabled or permissions missing';
     if (error.contains('401')) return 'Authentication failed';
     if (error.contains('400')) return 'Invalid request';
-    if (error.contains('NetworkException') || error.contains('SocketException')) {
+    if (error.contains('NetworkException') ||
+        error.contains('SocketException')) {
       return 'Network connection issue';
     }
     if (error.contains('cancelled')) return 'Sign-in was cancelled';

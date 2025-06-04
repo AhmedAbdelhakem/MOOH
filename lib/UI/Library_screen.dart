@@ -249,7 +249,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           onTap: () => _showImageDetails(imageData),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Container(
+            child: SizedBox(
               width: double.infinity,
               height: double.infinity,
               child:

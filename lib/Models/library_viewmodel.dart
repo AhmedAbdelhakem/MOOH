@@ -57,7 +57,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> pickImages() async {
     final pickedFiles = await _imagePicker.pickMultiImage();
-    if (pickedFiles == null || pickedFiles.isEmpty) return;
+    if (pickedFiles.isEmpty) return;
 
     _isUploading = true;
     notifyListeners();
@@ -77,12 +77,14 @@ class LibraryViewModel extends ChangeNotifier {
         if (driveFileId != null) uploadedCount++;
       }
 
-      newImages.add(ImageModel(
-        localPath: file.path,
-        driveFileId: driveFileId,
-        fileName: file.name,
-        uploadedAt: DateTime.now(),
-      ));
+      newImages.add(
+        ImageModel(
+          localPath: file.path,
+          driveFileId: driveFileId,
+          fileName: file.name,
+          uploadedAt: DateTime.now(),
+        ),
+      );
     }
 
     _isUploading = false;
@@ -123,7 +125,8 @@ class LibraryViewModel extends ChangeNotifier {
   }
 
   String getUploadStatusMessage(List<ImageModel> newImages) {
-    final uploadedCount = newImages.where((img) => img.driveFileId != null).length;
+    final uploadedCount =
+        newImages.where((img) => img.driveFileId != null).length;
     final localCount = newImages.length - uploadedCount;
 
     if (uploadedCount > 0 && localCount > 0) {

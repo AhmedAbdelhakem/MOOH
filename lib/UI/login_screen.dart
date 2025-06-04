@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../Component/button.dart';
 import '../Component/input_field.dart';
 import '../Models/validator.dart';
 import 'Library_screen.dart';
@@ -93,13 +92,14 @@ class _SignInScreenState extends State<SignInScreen> {
       } else if (e.code == 'invalid-email') {
         errorMessage = 'The email address is badly formatted.';
       } else if (e.code == 'invalid-credential') {
-        errorMessage = 'Invalid credentials. Please check your email and password.';
+        errorMessage =
+            'Invalid credentials. Please check your email and password.';
       }
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     } catch (e) {
       if (context.mounted) {
@@ -134,15 +134,16 @@ class _SignInScreenState extends State<SignInScreen> {
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithCredential(credential);
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('logged_user_id', userCredential.user!.uid);
@@ -162,7 +163,9 @@ class _SignInScreenState extends State<SignInScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google Sign-In failed. Please try again.')),
+          const SnackBar(
+            content: Text('Google Sign-In failed. Please try again.'),
+          ),
         );
       }
     } finally {
@@ -250,7 +253,8 @@ class _SignInScreenState extends State<SignInScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isLoading || isGoogleLoading ? null : _onLoginPressed,
+                    onPressed:
+                        isLoading || isGoogleLoading ? null : _onLoginPressed,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFFFF6633),
                       padding: const EdgeInsets.symmetric(vertical: 15),
@@ -258,23 +262,24 @@ class _SignInScreenState extends State<SignInScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: isLoading
-                        ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                        : const Text(
-                      'Login',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child:
+                        isLoading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text(
+                              'Login',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                   ),
                 ),
 
@@ -286,7 +291,8 @@ class _SignInScreenState extends State<SignInScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isLoading || isGoogleLoading ? null : _signInWithGoogle,
+                    onPressed:
+                        isLoading || isGoogleLoading ? null : _signInWithGoogle,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Color(0xFFFF6633),
@@ -297,40 +303,41 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: isGoogleLoading
-                        ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
-                      ),
-                    )
-                        : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Google Logo (you can replace with actual Google logo image)
-                        Container(
-                          height: 20,
-                          width: 20,
-                          decoration: const BoxDecoration(
-                            image: DecorationImage(
-                              image: NetworkImage(
-                                'https://developers.google.com/identity/images/g-logo.png',
+                    child:
+                        isGoogleLoading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.black,
                               ),
+                            )
+                            : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Google Logo (you can replace with actual Google logo image)
+                                Container(
+                                  height: 20,
+                                  width: 20,
+                                  decoration: const BoxDecoration(
+                                    image: DecorationImage(
+                                      image: NetworkImage(
+                                        'https://developers.google.com/identity/images/g-logo.png',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'Sign in with Google',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Sign in with Google',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ],

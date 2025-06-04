@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -104,11 +104,7 @@ class SettingsPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: Colors.grey[600],
-            size: 24,
-          ),
+          Icon(icon, color: Colors.grey[600], size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -126,21 +122,14 @@ class SettingsPage extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ],
             ),
           ),
           if (hasArrow)
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey[400],
-              size: 20,
-            ),
+            Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
         ],
       ),
     );
@@ -165,23 +154,24 @@ class SettingsPage extends StatelessWidget {
           // Handle logout
           showDialog(
             context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Logout'),
-              content: const Text('Are you sure you want to logout?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // Handle logout logic here
+                      },
+                      child: const Text('Logout'),
+                    ),
+                  ],
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Handle logout logic here
-                  },
-                  child: const Text('Logout'),
-                ),
-              ],
-            ),
           );
         },
         style: ElevatedButton.styleFrom(
@@ -194,10 +184,7 @@ class SettingsPage extends StatelessWidget {
         ),
         child: const Text(
           'Logout',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
