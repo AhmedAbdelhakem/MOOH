@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "888078756617",
+    "firebase_url": "https://mooh-20804-default-rtdb.firebaseio.com",
     "project_id": "mooh-20804",
     "storage_bucket": "mooh-20804.firebasestorage.app"
   },
@@ -19,6 +20,14 @@
           "android_info": {
             "package_name": "com.example.mooh",
             "certificate_hash": "5e24549515a65c2ff9866d74a40eae33228d99a1"
+          }
+        },
+        {
+          "client_id": "888078756617-vmlpfpfd6e56pufpgb1ehp8rbef69i2f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mooh",
+            "certificate_hash": "1112231321422543542453543423543243542321"
           }
         },
         {

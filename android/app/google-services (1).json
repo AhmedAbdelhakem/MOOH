@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "888078756617-vmlpfpfd6e56pufpgb1ehp8rbef69i2f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mooh",
+            "certificate_hash": "1112231321422543542453543423543243542321"
+          }
+        },
+        {
           "client_id": "888078756617-t0f3n94mkri6u1ao7ic6km1nalhpl9k4.apps.googleusercontent.com",
           "client_type": 3
         }
